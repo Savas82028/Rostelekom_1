@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}Приём товара — Ростелеком{% endblock %}
+{% block extra_css %}
+<style>
+    body {
+        min-height: 100vh;
+        background: linear-gradient(180deg, #f8f4ff 0%, #fff5f0 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .header {
+        background: linear-gradient(90deg, #7700ff, #ff4f12);
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(119, 0, 255, 0.2);
+    }
+    
+    .header-user-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .logo { height: 32px; width: auto; }
+    .user-login { color: white; font-weight: 600; font-size: 0.9rem; }
+    
+    .logout-btn {
+        padding: 6px 14px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 2px solid white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
+    
+    .content {
+        padding: 16px;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+    
+    .block {
+        background: white;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        margin-bottom: 16px;
+    }
+    
+    .block h2 {
+        color: #7700ff;
+        margin-bottom: 12px;
+        font-size: 1.1rem;
+    }
+    
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .data-table {
+        width: 100%;
+        min-width: 320px;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 10px 8px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .data-table th {
+        color: #7700ff;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    
+    .data-table tr:active { background: #f8f4ff; }
+    
+    .empty-msg { color: #999; padding: 24px; text-align: center; font-size: 0.9rem; }
+    
+    /* Карта склада */
+    .map-block {
+        background: white;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        margin-bottom: 16px;
+    }
+    
+    .map-block h2 {
+        color: #7700ff;
+        margin-bottom: 12px;
+        font-size: 1.1rem;
+    }
+    
+    .map-zoom-controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .map-zoom-btn {
+        padding: 8px 14px;
+        background: linear-gradient(135deg, #7700ff, #ff4f12);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    .map-zoom-btn:hover, .map-zoom-btn:active { opacity: 0.9; }
+    
+    .map-container {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        min-height: 200px;
+        max-height: 280px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f5f5f5;
+        border-radius: 12px;
+    }
+    
+    .map-grid-wrapper {
+        transform-origin: center center;
+        padding: 12px;
+        transition: transform 0.15s ease-out;
+    }
+    
+    .map-grid {
+        display: grid;
+        gap: 2px;
+        background: #ddd;
+        padding: 4px;
+        border-radius: 8px;
+    }
+    
+    .map-cell {
+        min-width: 48px;
+        min-height: 48px;
+        padding: 4px;
+        font-size: 0.65rem;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+    }
+    
+    .map-cell.robot { background: #e3f2fd; border-color: #2196f3; }
+    .map-cell.shelf { background: #fff3e0; border-color: #ff9800; }
+    .map-cell.obstacle { background: #ffebee; border-color: #f44336; }
+    .map-cell.empty { background: #fafafa; }
+    
+    .map-cell .robot-id { font-weight: 700; color: #1976d2; }
+    .map-cell .robot-info { font-size: 0.55rem; color: #666; margin-top: 1px; }
+    
+    /* Телефонная ориентация: портрет, узкий экран */
+    @media (min-width: 481px) {
+        .content { max-width: 100%; }
+        .map-cell { min-width: 56px; min-height: 56px; font-size: 0.7rem; }
+    }
+    
+    @media (orientation: landscape) and (max-height: 500px) {
+        .header { padding: 8px 12px; }
+        .logo { height: 28px; }
+        .user-login { font-size: 0.8rem; }
+        .content { padding: 12px; }
+        .map-container { max-height: 180px; }
+        .map-cell { min-width: 40px; min-height: 40px; font-size: 0.6rem; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<header class="header">
+    <div class="header-user-block">
+        <img src="{{ url_for('static', filename='img/Rostelekom.png') }}" alt="Ростелеком" class="logo" onerror="this.onerror=null; this.outerHTML='<span class=\'logo-text\' style=\'color:white;font-weight:700;\'>Ростелеком</span>';">
+        <span class="user-login">{{ current_user.login }}</span>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-btn">Выйти</a>
+</header>
+
+<main class="content">
+    <div class="map-block">
+        <h2>Карта склада</h2>
+        <div class="map-zoom-controls">
+            <button class="map-zoom-btn" onclick="zoomMap(1.2)">+ Приблизить</button>
+            <button class="map-zoom-btn" onclick="zoomMap(0.8)">− Отдалить</button>
+            <button class="map-zoom-btn" onclick="resetZoom()">Сброс</button>
+        </div>
+        <div class="map-container" id="mapContainer">
+            {% if map_cells %}
+            <div class="map-grid-wrapper" id="mapWrapper">
+                <div class="map-grid" style="grid-template-columns: repeat({{ cols }}, 1fr); grid-template-rows: repeat({{ rows }}, 1fr);">
+                    {% for cell in map_cells %}
+                    <div class="map-cell {{ cell.cell_type }}" title="{{ cell.robot_info or cell.cell_type }}">
+                        {% if cell.robot_id %}
+                        <span class="robot-id">{{ cell.robot_id }}</span>
+                        <span class="robot-info">{{ cell.robot_info or '' }}</span>
+                        {% elif cell.cell_type == 'shelf' %}
+                        <span class="robot-info">Стеллаж</span>
+                        <span class="robot-id">{{ cell.robot_info or '' }}</span>
+                        {% elif cell.cell_type == 'obstacle' %}
+                        <span class="robot-id">—</span>
+                        {% else %}
+                        <span class="robot-info">{{ cell.row }},{{ cell.col }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <p class="empty-msg" style="margin:0;">Нет данных карты</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="block">
+        <h2>Поступления</h2>
+        <div class="table-wrap">
+            {% if receipts %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Товар</th>
+                        <th>Кол-во</th>
+                        <th>Поставщик</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in receipts %}
+                    <tr>
+                        <td>{{ r.receipt_date.strftime('%d.%m.%Y') if r.receipt_date else '—' }}</td>
+                        <td>{{ r.product_name }}</td>
+                        <td>{{ r.quantity }}</td>
+                        <td>{{ r.supplier or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-msg">Нет данных о поступлениях</p>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<script>
+    let scale = 1;
+    
+    function zoomMap(factor) {
+        var wrapper = document.getElementById('mapWrapper');
+        if (!wrapper) return;
+        scale *= factor;
+        scale = Math.max(0.3, Math.min(3, scale));
+        wrapper.style.transform = 'scale(' + scale + ')';
+    }
+    
+    function resetZoom() {
+        var wrapper = document.getElementById('mapWrapper');
+        if (wrapper) { scale = 1; wrapper.style.transform = 'scale(1)'; }
+    }
+    
+    (function() {
+        var container = document.getElementById('mapContainer');
+        if (container) {
+            container.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                zoomMap(e.deltaY > 0 ? 0.9 : 1.1);
+            }, { passive: false });
+        }
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Панель — Ростелеком{% endblock %}
+{% block extra_css %}
+<style>
+    body {
+        min-height: 100vh;
+        background: linear-gradient(180deg, #f8f4ff 0%, #fff5f0 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .header {
+        background: linear-gradient(90deg, #7700ff, #ff4f12);
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(119, 0, 255, 0.2);
+    }
+    
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .header-user-block {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .logo {
+        height: 40px;
+        width: auto;
+    }
+    
+    .user-login {
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .logout-btn {
+        padding: 8px 20px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 2px solid white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+    
+    .logout-btn:hover {
+        background: rgba(255,255,255,0.35);
+        color: white;
+    }
+    
+    .content {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 24px;
+    }
+    
+    .welcome-card {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    
+    .welcome-card h1 {
+        color: #7700ff;
+        margin-bottom: 12px;
+        font-size: 1.6rem;
+    }
+    
+    .welcome-card p {
+        color: #666;
+        font-size: 1rem;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        margin-top: 16px;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #7700ff20, #ff4f1220);
+        color: #7700ff;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-user-block">
+            <img src="{{ url_for('static', filename='img/Rostelekom.png') }}" alt="Ростелеком" class="logo" onerror="this.onerror=null; this.outerHTML='<span class=\'logo-text\' style=\'color:white;font-weight:700;\'>Ростелеком</span>';">
+            <span class="user-login">{{ current_user.login }}</span>
+        </div>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-btn">Выйти</a>
+</header>
+
+<main class="content">
+    <div class="welcome-card">
+        <h1>Добро пожаловать, {{ current_user.login }}!</h1>
+        <p>Вы вошли в систему Ростелеком.</p>
+        <span class="role-badge">{{ current_user.role }}</span>
+    </div>
+</main>
+{% endblock %}

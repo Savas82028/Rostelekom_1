@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Учётные записи — Ростелеком{% endblock %}
+{% block extra_css %}
+<style>
+    body { min-height: 100vh; background: linear-gradient(180deg, #f8f4ff 0%, #fff5f0 100%); font-family: 'Segoe UI', sans-serif; }
+    .header {
+        background: linear-gradient(90deg, #7700ff, #ff4f12);
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(119, 0, 255, 0.2);
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .header-user-block { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 16px; border: 1px solid rgba(255,255,255,0.4); }
+    .logo { height: 40px; width: auto; }
+    .user-login { color: white; font-weight: 600; }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; text-decoration: none; font-weight: 600; }
+    .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
+    .back-link { color: white; text-decoration: none; margin-right: 20px; }
+    .back-link:hover { text-decoration: underline; }
+    .content { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+    .users-card { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .users-card h2 { color: #7700ff; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #eee; }
+    th { color: #7700ff; font-weight: 600; }
+    tr:hover { background: #f8f4ff; }
+    .empty { color: #999; text-align: center; padding: 40px; }
+</style>
+{% endblock %}
+{% block content %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-user-block">
+            <img src="{{ url_for('static', filename='img/Rostelekom.png') }}" alt="Ростелеком" class="logo" onerror="this.onerror=null; this.outerHTML='<span class=\'logo-text\' style=\'color:white;font-weight:700;\'>Ростелеком</span>';">
+            <span class="user-login">{{ current_user.login }}</span>
+        </div>
+        <a href="{{ url_for('dashboard.main') }}" class="back-link">← Панель</a>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-btn">Выйти</a>
+</header>
+
+<main class="content">
+    <div class="users-card">
+        <h2>Список учётных записей</h2>
+        {% if users %}
+        <table>
+            <thead>
+                <tr><th>Логин</th><th>Роль</th></tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr><td>{{ u.login }}</td><td>{{ u.role }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">Нет созданных учётных записей</p>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

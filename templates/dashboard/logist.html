@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Логистика — Ростелеком{% endblock %}
+{% block extra_css %}
+<style>
+    body {
+        min-height: 100vh;
+        background: linear-gradient(180deg, #f8f4ff 0%, #fff5f0 100%);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .header {
+        background: linear-gradient(90deg, #7700ff, #ff4f12);
+        padding: 16px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(119, 0, 255, 0.2);
+    }
+    
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    
+    .header-user-block {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .logo { height: 40px; width: auto; }
+    .user-login { color: white; font-weight: 600; font-size: 1rem; }
+    
+    .logout-btn {
+        padding: 8px 20px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 2px solid white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
+    
+    .content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+        height: calc(100vh - 80px);
+        max-height: calc(100vh - 80px);
+    }
+    
+    .block {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .block h2 {
+        color: #7700ff;
+        margin-bottom: 16px;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .btn-prognoz {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #7700ff, #ff4f12);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    .btn-prognoz:hover { opacity: 0.9; }
+    .btn-prognoz:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    .table-wrap {
+        flex: 1;
+        overflow: auto;
+    }
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .data-table th {
+        color: #7700ff;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        background: white;
+    }
+    
+    .data-table tr:hover { background: #f8f4ff; }
+    
+    .prognoz-list {
+        flex: 1;
+        overflow: auto;
+    }
+    
+    .prognoz-card {
+        background: #f8f4ff;
+        border-left: 4px solid #7700ff;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+    }
+    
+    .prognoz-card .date {
+        color: #666;
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+    }
+    
+    .empty-msg { color: #999; padding: 24px; text-align: center; }
+    
+    .flash-success { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    .flash-error { background: #ffebee; color: #c62828; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+    
+    @media (max-width: 1200px) {
+        .content { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<header class="header">
+    <div class="header-left">
+        <div class="header-user-block">
+            <img src="{{ url_for('static', filename='img/Rostelekom.png') }}" alt="Ростелеком" class="logo" onerror="this.onerror=null; this.outerHTML='<span class=\'logo-text\' style=\'color:white;font-weight:700;\'>Ростелеком</span>';">
+            <span class="user-login">{{ current_user.login }}</span>
+        </div>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-btn">Выйти</a>
+</header>
+
+<main class="content">
+    <div class="block">
+        <h2>Поступления</h2>
+        <div class="table-wrap">
+            {% if receipts %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Товар</th>
+                        <th>Кол-во</th>
+                        <th>Поставщик</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in receipts %}
+                    <tr>
+                        <td>{{ r.receipt_date.strftime('%d.%m.%Y') if r.receipt_date else '—' }}</td>
+                        <td>{{ r.product_name }}</td>
+                        <td>{{ r.quantity }}</td>
+                        <td>{{ r.supplier or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-msg">Нет данных о поступлениях</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="block">
+        <h2>
+            ИИ прогнозы
+            <form method="POST" action="{{ url_for('dashboard.generate_prognoz') }}" style="display:inline;">
+                <button type="submit" class="btn-prognoz" id="btnPrognoz">Сформировать прогноз</button>
+            </form>
+        </h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="flash-{{ category }}">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="prognoz-list">
+            {% if prognozy %}
+                {% for p in prognozy %}
+                <div class="prognoz-card">
+                    <div class="date">{{ p.created_at.strftime('%d.%m.%Y %H:%M') if p.created_at else '' }}</div>
+                    {{ p.prognoz_text }}
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="empty-msg">Прогнозы отсутствуют. Нажмите «Сформировать прогноз» для создания.</p>
+            {% endif %}
+        </div>
+    </div>
+</main>
+{% endblock %}
