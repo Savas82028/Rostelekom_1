@@ -11,7 +11,7 @@
     .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; text-decoration: none; font-weight: 600; }
     .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
     .content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-height: calc(100vh - 80px); }
-    .block { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; min-height: 520px; }
+    .block { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; min-height: 520px; cursor: pointer; }
     .block h2 { color: #7700ff; margin-bottom: 16px; font-size: 1.2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .btn-prognoz { padding: 8px 16px; background: linear-gradient(135deg, #7700ff, #ff4f12); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
     .btn-prognoz:hover { opacity: 0.9; }
@@ -40,7 +40,8 @@
 </header>
 
 <main class="content">
-    <div class="block">
+    {% if not view or view == 'inventory' %}
+    <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='inventory') }}">
         <h2>История инвентаризации</h2>
         <div class="table-wrap">
             {% if inventory %}
@@ -65,8 +66,35 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
     
-    <div class="block">
+    {% if not view or view == 'products' %}
+    <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='products') }}">
+        <h2>Товары</h2>
+        <div class="table-wrap">
+            {% if products_list %}
+            <table class="data-table">
+                <thead>
+                    <tr><th>ID</th><th>Название</th></tr>
+                </thead>
+                <tbody id="products-body">
+                    {% for p in products_list %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.name or p.id }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-msg">Нет данных о товарах</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not view or view == 'ai' %}
+    <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='ai') }}">
         <h2>
             ИИ прогнозы
             <form method="POST" action="{{ url_for('dashboard.generate_prognoz') }}" style="display:inline;">
@@ -103,6 +131,8 @@
             {% endif %}
         </div>
     </div>
+    </div>
+    {% endif %}
 </main>
 {% endblock %}
 {% block extra_js %}
@@ -122,6 +152,19 @@
             </tr>`;
         }).join('');
         tbody.innerHTML = rows || `<tr><td colspan="5" class="empty-msg">Нет данных инвентаризации</td></tr>`;
+    }
+
+    function renderProducts(items) {
+        const tbody = document.getElementById('products-body');
+        if (!tbody) return;
+        const rows = items.map(p => {
+            const name = p.name ?? p.id ?? '—';
+            return `<tr>
+                <td>${p.id ?? '—'}</td>
+                <td>${name}</td>
+            </tr>`;
+        }).join('');
+        tbody.innerHTML = rows || `<tr><td colspan="2" class="empty-msg">Нет данных о товарах</td></tr>`;
     }
 
     function renderPredictions(items) {
@@ -146,12 +189,21 @@
             if (!resp.ok) return;
             const data = await resp.json();
             renderInventory(data.inventory || []);
+            renderProducts(data.products || []);
             renderPredictions(data.predictions || []);
         } catch (e) {
             // silent
         }
     }
     setInterval(refreshData, 5000);
-    document.addEventListener('DOMContentLoaded', refreshData);
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshData();
+        document.querySelectorAll('.block[data-url]').forEach(el => {
+            el.addEventListener('click', () => {
+                const u = el.dataset.url;
+                if (u) window.location.href = u;
+            });
+        });
+    });
 </script>
 {% endblock %}

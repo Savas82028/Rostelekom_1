@@ -11,7 +11,7 @@
     .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; text-decoration: none; font-weight: 600; }
     .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
     .content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-height: calc(100vh - 80px); }
-    .block { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; min-height: 520px; }
+    .block { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; min-height: 520px; cursor: pointer; }
     .block h2 { color: #7700ff; margin-bottom: 16px; font-size: 1.2rem; }
     .table-wrap { flex: 1; overflow: auto; max-height: 620px; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -37,8 +37,9 @@
 </header>
 
 <main class="content">
-    <div class="block">
-        <h2>Роботы</h2>
+    {% if not view or view == 'robots' %}
+    <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='robots') }}">
+        <h2>Карта склада с роботами</h2>
         <div class="table-wrap">
             {% if robots %}
             <table class="data-table">
@@ -63,8 +64,10 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
     
-    <div class="block">
+    {% if not view or view == 'inventory' %}
+    <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='inventory') }}">
         <h2>История инвентаризации</h2>
         <div class="table-wrap">
             {% if inventory %}
@@ -90,6 +93,7 @@
             {% endif %}
         </div>
     </div>
+    {% endif %}
 </main>
 {% endblock %}
 {% block extra_js %}
@@ -141,6 +145,14 @@
         }
     }
     setInterval(refreshData, 5000);
-    document.addEventListener('DOMContentLoaded', refreshData);
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshData();
+        document.querySelectorAll('.block[data-url]').forEach(el => {
+            el.addEventListener('click', () => {
+                const u = el.dataset.url;
+                if (u) window.location.href = u;
+            });
+        });
+    });
 </script>
 {% endblock %}

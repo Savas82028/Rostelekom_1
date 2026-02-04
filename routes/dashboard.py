@@ -21,22 +21,29 @@ def main():
     """Выбор шаблона по роли"""
     if current_user.is_admin:
         return render_template('dashboard/admin.html')
-    elif current_user.role in ('Начальник склада', 'Приёмщик товаров'):
+    elif current_user.role == 'Начальник склада':
         robots = get_robots()
         inventory = get_inventory_history(50)
-        products = {p['id']: p.get('name', p['id']) for p in get_products()}
+        products_map = {p['id']: p.get('name', p['id']) for p in get_products()}
         for inv in inventory:
-            inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
+            inv['product_name'] = products_map.get(inv.get('product_id'), inv.get('product_id'))
         return render_template('dashboard/warehouse.html', robots=robots, inventory=inventory)
+    elif current_user.role == 'Приёмщик товаров':
+        inventory = get_inventory_history(50)
+        products_map = {p['id']: p.get('name', p['id']) for p in get_products()}
+        for inv in inventory:
+            inv['product_name'] = products_map.get(inv.get('product_id'), inv.get('product_id'))
+        return render_template('dashboard/receiver.html', inventory=inventory)
     elif current_user.role in ('Менеджер по продажам', 'Логист'):
         inventory = get_inventory_history(50)
         predictions = get_ai_predictions(20)
-        products = {p['id']: p.get('name', p['id']) for p in get_products()}
+        products_list = get_products()
+        products = {p['id']: p.get('name', p['id']) for p in products_list}
         for inv in inventory:
             inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
         for p in predictions:
             p['product_name'] = products.get(p.get('product_id'), p.get('product_id'))
-        return render_template('dashboard/logist.html', inventory=inventory, predictions=predictions)
+        return render_template('dashboard/logist.html', inventory=inventory, predictions=predictions, products_list=products_list)
     else:
         return render_template('dashboard/user.html')
 
@@ -115,9 +122,51 @@ def data_warehouse():
 def data_logist():
     inventory = get_inventory_history(50)
     predictions = get_ai_predictions(20)
-    products = {p['id']: p.get('name', p['id']) for p in get_products()}
+    products_list = get_products()
+    products = {p['id']: p.get('name', p['id']) for p in products_list}
     for inv in inventory:
         inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
     for p in predictions:
         p['product_name'] = products.get(p.get('product_id'), p.get('product_id'))
-    return jsonify({'inventory': inventory, 'predictions': predictions})
+    return jsonify({'inventory': inventory, 'predictions': predictions, 'products': products_list})
+
+
+@dashboard_bp.route('/apps/<app_name>')
+@login_required
+def app_page(app_name):
+    app_name = (app_name or '').lower()
+    if current_user.is_admin:
+        return redirect(url_for('dashboard.main'))
+    if current_user.role == 'Начальник склада':
+        if app_name not in ('robots', 'inventory'):
+            flash('Доступ запрещён', 'error')
+            return redirect(url_for('dashboard.main'))
+        robots = get_robots()
+        inventory = get_inventory_history(50)
+        products_map = {p['id']: p.get('name', p['id']) for p in get_products()}
+        for inv in inventory:
+            inv['product_name'] = products_map.get(inv.get('product_id'), inv.get('product_id'))
+        return render_template('dashboard/warehouse.html', robots=robots, inventory=inventory, view=app_name)
+    if current_user.role == 'Приёмщик товаров':
+        if app_name != 'inventory':
+            flash('Доступ запрещён', 'error')
+            return redirect(url_for('dashboard.main'))
+        inventory = get_inventory_history(50)
+        products_map = {p['id']: p.get('name', p['id']) for p in get_products()}
+        for inv in inventory:
+            inv['product_name'] = products_map.get(inv.get('product_id'), inv.get('product_id'))
+        return render_template('dashboard/receiver.html', inventory=inventory, view=app_name)
+    if current_user.role in ('Менеджер по продажам', 'Логист'):
+        if app_name not in ('inventory', 'products', 'ai'):
+            flash('Доступ запрещён', 'error')
+            return redirect(url_for('dashboard.main'))
+        inventory = get_inventory_history(50)
+        predictions = get_ai_predictions(20)
+        products_list = get_products()
+        products = {p['id']: p.get('name', p['id']) for p in products_list}
+        for inv in inventory:
+            inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
+        for p in predictions:
+            p['product_name'] = products.get(p.get('product_id'), p.get('product_id'))
+        return render_template('dashboard/logist.html', inventory=inventory, predictions=predictions, products_list=products_list, view=app_name)
+    return render_template('dashboard/user.html')
