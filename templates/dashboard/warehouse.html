@@ -23,6 +23,11 @@
     .status-low { color: #f57c00; }
     .status-critical { color: #c62828; }
     @media (max-width: 1200px) { .content { grid-template-columns: 1fr; } }
+    .map-wrap { flex: 1; overflow: auto; background: #f5f5f5; border-radius: 12px; border: 1px solid #eee; }
+    #mapSvg { width: 100%; height: 100%; min-height: 520px; display: block; }
+    .map-label { fill: #777; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }
+    .robot-id-text { fill: #fff; font-weight: 700; font-size: 12px; text-anchor: middle; dominant-baseline: middle; }
+    .robot-batt-text { fill: #333; font-size: 11px; text-anchor: middle; }
 </style>
 {% endblock %}
 {% block content %}
@@ -40,28 +45,8 @@
     {% if not view or view == 'robots' %}
     <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='robots') }}">
         <h2>Карта склада с роботами</h2>
-        <div class="table-wrap">
-            {% if robots %}
-            <table class="data-table">
-                <thead>
-                    <tr><th>ID</th><th>Статус</th><th>Батарея</th><th>Зона</th><th>Ряд</th><th>Полка</th></tr>
-                </thead>
-                <tbody id="robots-body">
-                    {% for r in robots %}
-                    <tr>
-                        <td>{{ r.id }}</td>
-                        <td>{{ r.status or '—' }}</td>
-                        <td>{{ r.battery_level or '—' }}%</td>
-                        <td>{{ r.current_zone or '—' }}</td>
-                        <td>{{ r.current_row or '—' }}</td>
-                        <td>{{ r.current_shelf or '—' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="empty-msg">Нет данных о роботах. Запустите эмулятор.</p>
-            {% endif %}
+        <div class="map-wrap">
+            <svg id="mapSvg"></svg>
         </div>
     </div>
     {% endif %}
@@ -98,21 +83,125 @@
 {% endblock %}
 {% block extra_js %}
 <script>
+    const NS = 'http://www.w3.org/2000/svg';
+    const COLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const ROWS = Array.from({length: 50}, (_, i) => i + 1);
+    const CELL_W = 36, CELL_H = 36, LM = 36, TM = 24;
+    let gridBuilt = false;
+
+    function buildMapGrid() {
+        const svg = document.getElementById('mapSvg');
+        if (!svg || gridBuilt) return;
+        const W = LM + COLS.length * CELL_W + 16;
+        const H = TM + ROWS.length * CELL_H + 16;
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+        const grid = document.createElementNS(NS, 'g');
+        grid.setAttribute('id', 'grid-layer');
+        svg.appendChild(grid);
+
+        for (let j = 0; j <= COLS.length; j++) {
+            const x = LM + j * CELL_W;
+            const v = document.createElementNS(NS, 'line');
+            v.setAttribute('x1', x);
+            v.setAttribute('y1', TM);
+            v.setAttribute('x2', x);
+            v.setAttribute('y2', TM + ROWS.length * CELL_H);
+            v.setAttribute('stroke', j % 5 === 0 ? '#bbb' : '#ddd');
+            grid.appendChild(v);
+        }
+        for (let i = 0; i <= ROWS.length; i++) {
+            const y = TM + i * CELL_H;
+            const h = document.createElementNS(NS, 'line');
+            h.setAttribute('x1', LM);
+            h.setAttribute('y1', y);
+            h.setAttribute('x2', LM + COLS.length * CELL_W);
+            h.setAttribute('y2', y);
+            h.setAttribute('stroke', i % 5 === 0 ? '#bbb' : '#ddd');
+            grid.appendChild(h);
+        }
+
+        for (let j = 0; j < COLS.length; j++) {
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('class', 'map-label');
+            t.setAttribute('x', LM + j * CELL_W + CELL_W / 2);
+            t.setAttribute('y', 14);
+            t.setAttribute('text-anchor', 'middle');
+            t.textContent = COLS[j];
+            grid.appendChild(t);
+        }
+        for (let i = 0; i < ROWS.length; i++) {
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('class', 'map-label');
+            t.setAttribute('x', LM - 10);
+            t.setAttribute('y', TM + i * CELL_H + CELL_H / 2 + 4);
+            t.setAttribute('text-anchor', 'end');
+            t.textContent = ROWS[i];
+            grid.appendChild(t);
+        }
+
+        const robotsLayer = document.createElementNS(NS, 'g');
+        robotsLayer.setAttribute('id', 'robots-layer');
+        svg.appendChild(robotsLayer);
+
+        gridBuilt = true;
+    }
+
+    function batteryColor(b) {
+        if (b === null || b === undefined) return '#888';
+        if (b >= 67) return '#2e7d32';
+        if (b >= 34) return '#f57c00';
+        return '#c62828';
+    }
+
     function renderRobots(robots) {
-        const tbody = document.getElementById('robots-body');
-        if (!tbody) return;
-        const rows = robots.map(r => {
-            const battery = (r.battery_level !== null && r.battery_level !== undefined) ? r.battery_level + '%' : '—';
-            return `<tr>
-                <td>${r.id ?? '—'}</td>
-                <td>${r.status ?? '—'}</td>
-                <td>${battery}</td>
-                <td>${r.current_zone ?? '—'}</td>
-                <td>${r.current_row ?? '—'}</td>
-                <td>${r.current_shelf ?? '—'}</td>
-            </tr>`;
-        }).join('');
-        tbody.innerHTML = rows || `<tr><td colspan="6" class="empty-msg">Нет данных о роботах</td></tr>`;
+        buildMapGrid();
+        const svg = document.getElementById('mapSvg');
+        if (!svg) return;
+        let layer = svg.querySelector('#robots-layer');
+        if (!layer) {
+            layer = document.createElementNS(NS, 'g');
+            layer.setAttribute('id', 'robots-layer');
+            svg.appendChild(layer);
+        }
+        while (layer.firstChild) layer.removeChild(layer.firstChild);
+
+        robots.forEach(r => {
+            const zone = (r.current_zone || '').toString().trim().toUpperCase();
+            const z = zone ? zone[0] : '';
+            const col = COLS.indexOf(z);
+            const row = parseInt(r.current_row);
+            if (col < 0 || isNaN(row) || row < 1 || row > 50) return;
+            const x = LM + col * CELL_W + CELL_W / 2;
+            const y = TM + (row - 1) * CELL_H + CELL_H / 2;
+            const batt = r.battery_level;
+
+            const c = document.createElementNS(NS, 'circle');
+            c.setAttribute('cx', x);
+            c.setAttribute('cy', y);
+            c.setAttribute('r', 14);
+            c.setAttribute('fill', batteryColor(batt));
+            c.setAttribute('stroke', '#fff');
+            c.setAttribute('stroke-width', '2');
+            const title = document.createElementNS(NS, 'title');
+            title.textContent = `ID ${r.id}, ${batt !== null && batt !== undefined ? batt + '%' : '—'}`;
+            c.appendChild(title);
+            layer.appendChild(c);
+
+            const idText = document.createElementNS(NS, 'text');
+            idText.setAttribute('class', 'robot-id-text');
+            idText.setAttribute('x', x);
+            idText.setAttribute('y', y);
+            idText.textContent = r.id ?? '';
+            layer.appendChild(idText);
+
+            const battText = document.createElementNS(NS, 'text');
+            battText.setAttribute('class', 'robot-batt-text');
+            battText.setAttribute('x', x);
+            battText.setAttribute('y', y + 18);
+            battText.textContent = batt !== null && batt !== undefined ? batt + '%' : '—';
+            layer.appendChild(battText);
+        });
     }
 
     function renderInventory(items) {
