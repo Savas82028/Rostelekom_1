@@ -2,185 +2,27 @@
 {% block title %}Склад — Ростелеком{% endblock %}
 {% block extra_css %}
 <style>
-    body {
-        min-height: 100vh;
-        background: linear-gradient(180deg, #f8f4ff 0%, #fff5f0 100%);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    .header {
-        background: linear-gradient(90deg, #7700ff, #ff4f12);
-        padding: 16px 32px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 4px 12px rgba(119, 0, 255, 0.2);
-    }
-    
+    body { min-height: 100vh; background: linear-gradient(180deg, #f8f4ff 0%, #fff5f0 100%); font-family: 'Segoe UI', sans-serif; }
+    .header { background: linear-gradient(90deg, #7700ff, #ff4f12); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(119, 0, 255, 0.2); }
     .header-left { display: flex; align-items: center; gap: 20px; }
-    
-    .header-user-block {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 10px 20px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-    }
-    
+    .header-user-block { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 16px; border: 1px solid rgba(255,255,255,0.4); }
     .logo { height: 40px; width: auto; }
     .user-login { color: white; font-weight: 600; font-size: 1rem; }
-    
-    .logout-btn {
-        padding: 8px 20px;
-        background: rgba(255,255,255,0.2);
-        color: white;
-        border: 2px solid white;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-    }
+    .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; text-decoration: none; font-weight: 600; }
     .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
-    
-    .content {
-        display: grid;
-        grid-template-columns: 1fr 400px;
-        grid-template-rows: 1fr auto;
-        gap: 20px;
-        padding: 20px;
-        height: calc(100vh - 80px);
-        max-height: calc(100vh - 80px);
-    }
-    
-    .map-block {
-        grid-row: 1 / -1;
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-    
-    .map-block h2 {
-        color: #7700ff;
-        margin-bottom: 12px;
-        font-size: 1.2rem;
-    }
-    
-    .map-zoom-controls {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-    
-    .map-zoom-btn {
-        padding: 6px 14px;
-        background: linear-gradient(135deg, #7700ff, #ff4f12);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-    }
-    .map-zoom-btn:hover { opacity: 0.9; }
-    
-    .map-container {
-        flex: 1;
-        overflow: auto;
-        min-height: 300px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #f5f5f5;
-        border-radius: 12px;
-    }
-    
-    .map-grid-wrapper {
-        transform-origin: center center;
-        padding: 20px;
-        transition: transform 0.15s ease-out;
-    }
-    
-    .map-grid {
-        display: grid;
-        gap: 2px;
-        background: #ddd;
-        padding: 4px;
-        border-radius: 8px;
-    }
-    
-    .map-cell {
-        min-width: 70px;
-        min-height: 70px;
-        padding: 8px;
-        font-size: 0.75rem;
-        border-radius: 6px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        background: #fff;
-        border: 1px solid #e0e0e0;
-    }
-    
-    .map-cell.robot { background: #e3f2fd; border-color: #2196f3; }
-    .map-cell.shelf { background: #fff3e0; border-color: #ff9800; }
-    .map-cell.obstacle { background: #ffebee; border-color: #f44336; }
-    .map-cell.empty { background: #fafafa; }
-    
-    .map-cell .robot-id { font-weight: 700; color: #1976d2; }
-    .map-cell .robot-info { font-size: 0.65rem; color: #666; margin-top: 2px; }
-    
-    .receipts-block {
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .receipts-block h2 {
-        color: #7700ff;
-        margin-bottom: 16px;
-        font-size: 1.2rem;
-    }
-    
-    .receipts-table-wrap {
-        overflow: auto;
-        max-height: 320px;
-    }
-    
-    .receipts-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.9rem;
-    }
-    
-    .receipts-table th, .receipts-table td {
-        padding: 10px 12px;
-        text-align: left;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .receipts-table th {
-        color: #7700ff;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        background: white;
-    }
-    
-    .receipts-table tr:hover { background: #f8f4ff; }
-    
-    @media (max-width: 1200px) {
-        .content { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-    }
+    .content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-height: calc(100vh - 80px); }
+    .block { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .block h2 { color: #7700ff; margin-bottom: 16px; font-size: 1.2rem; }
+    .table-wrap { flex: 1; overflow: auto; max-height: 400px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .data-table th { color: #7700ff; font-weight: 600; position: sticky; top: 0; background: white; }
+    .data-table tr:hover { background: #f8f4ff; }
+    .empty-msg { color: #999; padding: 24px; text-align: center; }
+    .status-ok { color: #2e7d32; }
+    .status-low { color: #f57c00; }
+    .status-critical { color: #c62828; }
+    @media (max-width: 1200px) { .content { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 {% block content %}
@@ -195,87 +37,58 @@
 </header>
 
 <main class="content">
-    <div class="map-block">
-        <h2>Карта склада</h2>
-        <div class="map-zoom-controls">
-            <button class="map-zoom-btn" onclick="zoomMap(1.2)">+ Приблизить</button>
-            <button class="map-zoom-btn" onclick="zoomMap(0.8)">− Отдалить</button>
-            <button class="map-zoom-btn" onclick="resetZoom()">Сброс</button>
-        </div>
-        <div class="map-container" id="mapContainer">
-            <div class="map-grid-wrapper" id="mapWrapper">
-                <div class="map-grid" style="grid-template-columns: repeat({{ cols }}, 1fr); grid-template-rows: repeat({{ rows }}, 1fr);">
-                    {% for cell in map_cells %}
-                    <div class="map-cell {{ cell.cell_type }}" title="{{ cell.robot_info or cell.cell_type }}">
-                        {% if cell.robot_id %}
-                        <span class="robot-id">{{ cell.robot_id }}</span>
-                        <span class="robot-info">{{ cell.robot_info or '' }}</span>
-                        {% elif cell.cell_type == 'shelf' %}
-                        <span class="robot-info">Стеллаж</span>
-                        <span class="robot-id">{{ cell.robot_info or '' }}</span>
-                        {% elif cell.cell_type == 'obstacle' %}
-                        <span class="robot-id">—</span>
-                        {% else %}
-                        <span class="robot-info">{{ cell.row }},{{ cell.col }}</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="receipts-block">
-        <h2>Поступления</h2>
-        <div class="receipts-table-wrap">
-            {% if receipts %}
-            <table class="receipts-table">
+    <div class="block">
+        <h2>Роботы</h2>
+        <div class="table-wrap">
+            {% if robots %}
+            <table class="data-table">
                 <thead>
-                    <tr>
-                        <th>Дата</th>
-                        <th>Товар</th>
-                        <th>Кол-во</th>
-                        <th>Поставщик</th>
-                    </tr>
+                    <tr><th>ID</th><th>Статус</th><th>Батарея</th><th>Зона</th><th>Ряд</th><th>Полка</th></tr>
                 </thead>
                 <tbody>
-                    {% for r in receipts %}
+                    {% for r in robots %}
                     <tr>
-                        <td>{{ r.receipt_date.strftime('%d.%m.%Y') if r.receipt_date else '—' }}</td>
-                        <td>{{ r.product_name }}</td>
-                        <td>{{ r.quantity }}</td>
-                        <td>{{ r.supplier or '—' }}</td>
+                        <td>{{ r.id }}</td>
+                        <td>{{ r.status or '—' }}</td>
+                        <td>{{ r.battery_level or '—' }}%</td>
+                        <td>{{ r.current_zone or '—' }}</td>
+                        <td>{{ r.current_row or '—' }}</td>
+                        <td>{{ r.current_shelf or '—' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             {% else %}
-            <p style="color:#999; padding:20px;">Нет данных о поступлениях</p>
+            <p class="empty-msg">Нет данных о роботах. Запустите эмулятор.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="block">
+        <h2>История инвентаризации</h2>
+        <div class="table-wrap">
+            {% if inventory %}
+            <table class="data-table">
+                <thead>
+                    <tr><th>Дата</th><th>Робот</th><th>Товар</th><th>Кол-во</th><th>Зона</th><th>Статус</th></tr>
+                </thead>
+                <tbody>
+                    {% for inv in inventory %}
+                    <tr>
+                        <td>{{ inv.scanned_at[:16].replace('T',' ') if inv.scanned_at else '—' }}</td>
+                        <td>{{ inv.robot_id or '—' }}</td>
+                        <td>{{ inv.product_name or inv.product_id or '—' }}</td>
+                        <td>{{ inv.quantity }}</td>
+                        <td>{{ inv.zone or '—' }}</td>
+                        <td>{{ inv.status or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-msg">Нет данных инвентаризации</p>
             {% endif %}
         </div>
     </div>
 </main>
-
-<script>
-    let scale = 1;
-    const wrapper = document.getElementById('mapWrapper');
-    const container = document.getElementById('mapContainer');
-    
-    function zoomMap(factor) {
-        scale *= factor;
-        scale = Math.max(0.3, Math.min(3, scale));
-        wrapper.style.transform = `scale(${scale})`;
-    }
-    
-    function resetZoom() {
-        scale = 1;
-        wrapper.style.transform = 'scale(1)';
-    }
-    
-    container.addEventListener('wheel', function(e) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        zoomMap(1 + delta);
-    }, { passive: false });
-</script>
 {% endblock %}

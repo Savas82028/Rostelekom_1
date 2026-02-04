@@ -191,8 +191,8 @@
         <h2>Создание аккаунта</h2>
         <form method="POST" action="{{ url_for('dashboard.create_account') }}">
             <div class="form-row">
-                <label for="new_login">Логин</label>
-                <input type="text" id="new_login" name="new_login" required placeholder="Введите логин">
+                <label for="new_login">Имя пользователя</label>
+                <input type="text" id="new_login" name="new_login" required placeholder="Введите имя">
             </div>
             <div class="form-row">
                 <label for="new_password">Пароль</label>
@@ -202,11 +202,11 @@
                 <label>Роль</label>
                 <div class="role-buttons">
                     <button type="button" class="role-btn" data-role="Начальник склада">Начальник склада</button>
-                    <button type="button" class="role-btn" data-role="Логист">Логист</button>
                     <button type="button" class="role-btn" data-role="Менеджер по продажам">Менеджер по продажам</button>
-                    <button type="button" class="role-btn" data-role="Приёмщик товара">Приёмщик товара</button>
+                    <button type="button" class="role-btn" data-role="Приёмщик товаров">Приёмщик товаров</button>
+                    <button type="button" class="role-btn" data-role="Логист">Логист</button>
                 </div>
-                <input type="hidden" name="role" id="role" value="Менеджер по продажам">
+                <input type="hidden" name="role" id="role" value="Логист">
             </div>
             <button type="submit" class="btn-create">Создать аккаунт</button>
         </form>
@@ -222,6 +222,6 @@
             document.getElementById('role').value = this.dataset.role;
         });
     });
-    document.querySelector('.role-btn[data-role="Менеджер по продажам"]').classList.add('selected');
+    document.querySelector('.role-btn[data-role="Логист"]').classList.add('selected');
 </script>
 {% endblock %}

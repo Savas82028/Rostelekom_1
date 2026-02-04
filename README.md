@@ -4,10 +4,16 @@
 
 ## Структура проекта
 
-- **database/** — отдельное приложение для подключения к БД (SQLite)
+- **database/** — подключение к Supabase (URL + API key)
 - **routes/** — роутеры: авторизация (auth), панель (dashboard)
 - **templates/** — шаблоны страниц
 - **static/img/** — поместите логотип Rostelekom.png сюда
+
+## Подключение к Supabase
+
+1. Создайте проект на [supabase.com](https://supabase.com)
+2. В **SQL Editor** выполните скрипт `supabase_init.sql` для создания таблиц
+3. Скопируйте `.env.example` в `.env` и укажите `SUPABASE_URL` и `SUPABASE_KEY` (или они подставятся по умолчанию)
 
 ## Запуск
 
@@ -16,7 +22,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Откройте http://127.0.0.1:5000
+Откройте http://127.0.0.1:10000
 
 ## Учётные данные
 

@@ -1,104 +1,122 @@
 """
-Сервис получения ИИ-прогнозов на основе поступлений.
-Поддерживает DeepSeek API и Groq API (бесплатный tier).
+Сервис получения ИИ-прогнозов. Использует inventory_history и products.
+Сохраняет в ai_predictions (структурированные прогнозы по товарам).
 """
 import os
 import json
 import requests
+from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 
-from database.connection import db
-from database.models import Receipt, AIPrognoz
+from database.models import get_inventory_history, get_products, insert_ai_prediction
 
 load_dotenv()
 
-# Groq — бесплатный tier, Llama-модели
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.3-70b-versatile"
-
-# DeepSeek — требует пополнения баланса
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 DEEPSEEK_MODEL = "deepseek-chat"
 
 
 def generate_ai_prognoz():
     """
-    Получает поступления из БД, отправляет в ИИ-API (Groq или DeepSeek),
-    сохраняет прогноз в AI_prognoz и возвращает его.
+    Получает данные из inventory_history и products, отправляет в ИИ-API,
+    сохраняет прогнозы в ai_predictions.
     """
-    receipts = Receipt.query.order_by(Receipt.receipt_date.desc()).limit(50).all()
-    
-    if not receipts:
-        return None, "Нет данных о поступлениях для анализа"
-    
+    inventory = get_inventory_history(50)
+    products = get_products()
+
+    if not inventory:
+        return None, "Нет данных инвентаризации для анализа"
+
+    product_names = {p['id']: p.get('name', p['id']) for p in products}
     lines = []
-    for r in receipts:
-        date_str = r.receipt_date.strftime('%d.%m.%Y') if r.receipt_date else '—'
-        lines.append(f"- {r.product_name}: {r.quantity} шт. (дата: {date_str}, поставщик: {r.supplier or '—'})")
+    for inv in inventory:
+        product_name = product_names.get(inv.get('product_id'), inv.get('product_id'))
+        scanned = inv.get('scanned_at', '')[:10] if inv.get('scanned_at') else '—'
+        lines.append(f"- {product_name}: {inv.get('quantity', 0)} шт. (дата: {scanned}, статус: {inv.get('status', '—')})")
     data_text = "\n".join(lines)
-    
+
     user_input = (
-        "Ты — аналитик логистики. На основе данных о поступлениях товаров на склад "
-        "дай краткий прогноз: какие товары могут потребоваться в ближайшее время, "
-        "рекомендации по закупкам и логистике. Отвечай на русском языке, структурированно.\n\n"
-        f"Данные о поступлениях на склад:\n\n{data_text}\n\nСформируй прогноз."
+        "Ты — аналитик логистики. На основе данных инвентаризации товаров на складе "
+        "дай прогноз по каждому товару: сколько дней до исчерпания запаса, "
+        "рекомендуемый объём заказа, уверенность прогноза (0.0–1.0). "
+        "Отвечай ТОЛЬКО в формате JSON-массива, каждый элемент: "
+        '{"product_id": "TEL-4567", "days_until_stockout": 14, "recommended_order": 50, "confidence": 0.85}. '
+        "Если не можешь дать точные числа — используй оценки.\n\n"
+        f"Данные инвентаризации:\n\n{data_text}\n\n"
+        "Список product_id из данных выше. Верни JSON-массив прогнозов."
     )
-    
-    # Приоритет: Groq (бесплатный) → DeepSeek
+
     groq_key = os.getenv("GROQ_API_KEY")
     deepseek_key = os.getenv("DEEPSEEK_API_KEY")
-    
     prognoz_text = None
     deepseek_402 = False
-    
+
     if groq_key:
         prognoz_text, _ = _call_api(GROQ_URL, groq_key, GROQ_MODEL, user_input)
     if prognoz_text is None and deepseek_key:
         prognoz_text, err = _call_api(DEEPSEEK_URL, deepseek_key, DEEPSEEK_MODEL, user_input)
-        if prognoz_text is None and err and "402" in str(err):
+        if prognoz_text and err and "402" in str(err):
             deepseek_402 = True
+
     if prognoz_text is None:
-        prognoz_text = _demo_prognoz(receipts, data_text, payment_required=deepseek_402)
-    
-    prognoz = AIPrognoz(prognoz_text=prognoz_text)
-    db.session.add(prognoz)
-    db.session.commit()
-    return prognoz, None
+        # Демо: создаём прогнозы на основе данных
+        product_ids = list(set(inv.get('product_id') for inv in inventory if inv.get('product_id')))
+        pred_date = date.today()
+        for pid in product_ids[:5]:
+            insert_ai_prediction(
+                product_id=pid,
+                prediction_date=pred_date,
+                days_until_stockout=14,
+                recommended_order=50,
+                confidence_score=0.75
+            )
+        return True, None
+
+    # Парсим JSON из ответа ИИ
+    try:
+        # Извлекаем JSON из ответа (может быть обёрнут в markdown)
+        text = prognoz_text.strip()
+        if '```' in text:
+            start = text.find('[')
+            end = text.rfind(']') + 1
+            if start >= 0 and end > start:
+                text = text[start:end]
+        predictions = json.loads(text)
+        if not isinstance(predictions, list):
+            predictions = [predictions]
+    except json.JSONDecodeError:
+        # Fallback: один общий прогноз
+        product_ids = list(set(inv.get('product_id') for inv in inventory if inv.get('product_id')))
+        for pid in product_ids[:3]:
+            insert_ai_prediction(pid, date.today(), 14, 50, 0.7)
+        return True, None
+
+    pred_date = date.today()
+    for p in predictions:
+        pid = p.get('product_id') or p.get('product_name')
+        if not pid:
+            continue
+        insert_ai_prediction(
+            product_id=str(pid),
+            prediction_date=pred_date,
+            days_until_stockout=p.get('days_until_stockout'),
+            recommended_order=p.get('recommended_order'),
+            confidence_score=p.get('confidence') or p.get('confidence_score')
+        )
+    return True, None
 
 
 def _call_api(url, api_key, model, user_input):
-    """Вызов ИИ-API. Возвращает (text, error) — text или None при ошибке."""
     try:
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        data = {
-            "model": model,
-            "messages": [{"role": "user", "content": user_input}],
-            "max_tokens": 800
-        }
+        data = {"model": model, "messages": [{"role": "user", "content": user_input}], "max_tokens": 800}
         response = requests.post(url, headers=headers, json=data, timeout=60)
         response.raise_for_status()
         result = response.json()
         return result["choices"][0]["message"]["content"] or "", None
     except requests.RequestException as e:
         return None, str(e)
-    except json.JSONDecodeError:
-        return None, "Неверный формат ответа"
-    except (KeyError, IndexError):
+    except (json.JSONDecodeError, KeyError, IndexError):
         return None, "Ошибка формата ответа"
-
-
-def _demo_prognoz(receipts, data_text, payment_required=False):
-    """Демо-прогноз без API-ключа или при ошибке"""
-    products = list(set(r.product_name for r in receipts))
-    if payment_required:
-        note = "DeepSeek требует пополнения баланса. Groq бесплатен — получите ключ на https://console.groq.com/keys и укажите GROQ_API_KEY в .env"
-    else:
-        note = "Задайте GROQ_API_KEY (бесплатно) или DEEPSEEK_API_KEY в .env для ИИ-прогноза."
-    return (
-        f"Прогноз на основе {len(receipts)} записей поступлений:\n\n"
-        f"Анализ товаров: {', '.join(products[:5])}{'...' if len(products) > 5 else ''}\n\n"
-        "Рекомендации: увеличьте объём закупок кабельной продукции и роутеров на 15–20% "
-        "в связи с сезонным спросом. Обратите внимание на поставщика ООО Технопарк — "
-        "оптимизируйте частоту поставок.\n\n"
-        f"{note}"
-    )

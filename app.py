@@ -10,14 +10,14 @@ from flask import Flask
 from flask_login import LoginManager
 
 from database.connection import init_db
-from database.models import User
+from database.models import get_user_by_id
 
 # Импорт роутеров (после создания app)
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'rostelekom-secret-key-2024'
     
-    # Подключение к БД через отдельный модуль
+    # Подключение к Supabase
     init_db(app)
     
     # Flask-Login
@@ -28,14 +28,16 @@ def create_app():
     
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return get_user_by_id(user_id)
     
     # Регистрация blueprint'ов (роутеров)
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
+    from routes.api import api_bp
     
     app.register_blueprint(auth_bp, url_prefix='/')
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
+    app.register_blueprint(api_bp, url_prefix='/api')
     
     return app
 

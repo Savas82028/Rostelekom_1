@@ -47,11 +47,11 @@
         {% if users %}
         <table>
             <thead>
-                <tr><th>Логин</th><th>Роль</th></tr>
+                <tr><th>Имя</th><th>Роль</th></tr>
             </thead>
             <tbody>
                 {% for u in users %}
-                <tr><td>{{ u.login }}</td><td>{{ u.role }}</td></tr>
+                <tr><td>{{ u.name }}</td><td>{{ u.role }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
