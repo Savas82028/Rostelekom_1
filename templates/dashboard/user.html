@@ -60,40 +60,14 @@
         color: white;
     }
     
-    .content {
-        max-width: 800px;
-        margin: 40px auto;
-        padding: 0 24px;
-    }
-    
-    .welcome-card {
-        background: white;
-        border-radius: 16px;
-        padding: 48px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-        min-height: 360px;
-    }
-    
-    .welcome-card h1 {
-        color: #7700ff;
-        margin-bottom: 12px;
-        font-size: 1.6rem;
-    }
-    
-    .welcome-card p {
-        color: #666;
-        font-size: 1rem;
-    }
-    
-    .role-badge {
-        display: inline-block;
-        margin-top: 16px;
-        padding: 8px 16px;
-        background: linear-gradient(135deg, #7700ff20, #ff4f1220);
-        color: #7700ff;
-        border-radius: 8px;
-        font-weight: 600;
-    }
+    .content { max-width: 960px; margin: 40px auto; padding: 0 24px; }
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .app-card { display: block; text-decoration: none; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .app-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.12); }
+    .app-title { color: #7700ff; font-weight: 700; margin-bottom: 8px; font-size: 1.1rem; }
+    .app-desc { color: #666; font-size: 0.95rem; }
+    .apps-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .apps-sub { color: #7700ff; font-weight: 600; }
 </style>
 {% endblock %}
 {% block content %}
@@ -108,10 +82,26 @@
 </header>
 
 <main class="content">
-    <div class="welcome-card">
-        <h1>Добро пожаловать, {{ current_user.login }}!</h1>
-        <p>Вы вошли в систему Ростелеком.</p>
-        <span class="role-badge">{{ current_user.role }}</span>
+    <div class="apps-header">
+        <div style="color:#333;font-weight:600;">Добро пожаловать, {{ current_user.login }}!</div>
+        <div class="apps-sub">{{ current_user.role }}</div>
+    </div>
+    {% set app_defs = {
+        'robots': {'title': 'Карта склада с роботами', 'desc': 'Навигация роботов и их статус'},
+        'inventory': {'title': 'История инвентаризации', 'desc': 'Сканирования, остатки и статусы'},
+        'products': {'title': 'Товары', 'desc': 'Справочник товаров и позиций'},
+        'ai': {'title': 'ИИ прогнозы', 'desc': 'Прогнозы пополнения и спроса'}
+    } %}
+    <div class="apps-grid">
+        {% for key in (apps or []) %}
+        {% set app = app_defs.get(key) %}
+        {% if app %}
+        <a class="app-card" href="{{ url_for('dashboard.app_page', app_name=key) }}">
+            <div class="app-title">{{ app.title }}</div>
+            <div class="app-desc">{{ app.desc }}</div>
+        </a>
+        {% endif %}
+        {% endfor %}
     </div>
 </main>
 {% endblock %}

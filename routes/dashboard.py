@@ -22,30 +22,13 @@ def main():
     if current_user.is_admin:
         return render_template('dashboard/admin.html')
     elif current_user.role == 'Начальник склада':
-        robots = get_robots()
-        inventory = get_inventory_history(50)
-        products_map = {p['id']: p.get('name', p['id']) for p in get_products()}
-        for inv in inventory:
-            inv['product_name'] = products_map.get(inv.get('product_id'), inv.get('product_id'))
-        return render_template('dashboard/warehouse.html', robots=robots, inventory=inventory)
+        return render_template('dashboard/user.html', apps=['robots', 'inventory'])
     elif current_user.role == 'Приёмщик товаров':
-        inventory = get_inventory_history(50)
-        products_map = {p['id']: p.get('name', p['id']) for p in get_products()}
-        for inv in inventory:
-            inv['product_name'] = products_map.get(inv.get('product_id'), inv.get('product_id'))
-        return render_template('dashboard/receiver.html', inventory=inventory)
+        return render_template('dashboard/user.html', apps=['inventory'])
     elif current_user.role in ('Менеджер по продажам', 'Логист'):
-        inventory = get_inventory_history(50)
-        predictions = get_ai_predictions(20)
-        products_list = get_products()
-        products = {p['id']: p.get('name', p['id']) for p in products_list}
-        for inv in inventory:
-            inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
-        for p in predictions:
-            p['product_name'] = products.get(p.get('product_id'), p.get('product_id'))
-        return render_template('dashboard/logist.html', inventory=inventory, predictions=predictions, products_list=products_list)
+        return render_template('dashboard/user.html', apps=['inventory', 'products', 'ai'])
     else:
-        return render_template('dashboard/user.html')
+        return render_template('dashboard/user.html', apps=['inventory'])
 
 
 @dashboard_bp.route('/generate-prognoz', methods=['POST'])
