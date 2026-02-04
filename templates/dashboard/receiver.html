@@ -53,9 +53,10 @@
     .block {
         background: white;
         border-radius: 16px;
-        padding: 16px;
+        padding: 24px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         margin-bottom: 16px;
+        min-height: 420px;
     }
     
     .block h2 {
@@ -96,9 +97,10 @@
     .map-block {
         background: white;
         border-radius: 16px;
-        padding: 16px;
+        padding: 24px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         margin-bottom: 16px;
+        min-height: 360px;
     }
     
     .map-block h2 {
@@ -213,17 +215,17 @@
             <div class="map-grid-wrapper" id="mapWrapper">
                 <div class="map-grid" style="grid-template-columns: repeat({{ cols }}, 1fr); grid-template-rows: repeat({{ rows }}, 1fr);">
                     {% for cell in map_cells %}
-                    <div class="map-cell {{ cell.cell_type }}" title="{{ cell.robot_info or cell.cell_type }}">
-                        {% if cell.robot_id %}
-                        <span class="robot-id">{{ cell.robot_id }}</span>
-                        <span class="robot-info">{{ cell.robot_info or '' }}</span>
-                        {% elif cell.cell_type == 'shelf' %}
+                    <div class="map-cell {{ cell.cell_type|default('empty') }}" title="{{ (cell.robot_info|default(cell.cell_type|default(''))) }}">
+                        {% if cell.robot_id is defined and cell.robot_id %}
+                        <span class="robot-id">{{ cell.robot_id|default('') }}</span>
+                        <span class="robot-info">{{ cell.robot_info|default('') }}</span>
+                        {% elif cell.cell_type|default('') == 'shelf' %}
                         <span class="robot-info">Стеллаж</span>
-                        <span class="robot-id">{{ cell.robot_info or '' }}</span>
-                        {% elif cell.cell_type == 'obstacle' %}
+                        <span class="robot-id">{{ cell.robot_info|default('') }}</span>
+                        {% elif cell.cell_type|default('') == 'obstacle' %}
                         <span class="robot-id">—</span>
                         {% else %}
-                        <span class="robot-info">{{ cell.row }},{{ cell.col }}</span>
+                        <span class="robot-info">{{ cell.row|default('') }},{{ cell.col|default('') }}</span>
                         {% endif %}
                     </div>
                     {% endfor %}

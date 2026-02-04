@@ -2,7 +2,7 @@
 Роутер главной страницы (dashboard) - шаблоны по ролям.
 Роли: admin, Начальник склада, Менеджер по продажам, Приёмщик товаров, Логист
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
 from database.models import (
@@ -97,3 +97,27 @@ def create_account():
     
     flash(f'Аккаунт {name_input} успешно создан', 'success')
     return redirect(url_for('dashboard.main'))
+
+
+@dashboard_bp.route('/data/warehouse')
+@login_required
+def data_warehouse():
+    robots = get_robots()
+    inventory = get_inventory_history(50)
+    products = {p['id']: p.get('name', p['id']) for p in get_products()}
+    for inv in inventory:
+        inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
+    return jsonify({'robots': robots, 'inventory': inventory})
+
+
+@dashboard_bp.route('/data/logist')
+@login_required
+def data_logist():
+    inventory = get_inventory_history(50)
+    predictions = get_ai_predictions(20)
+    products = {p['id']: p.get('name', p['id']) for p in get_products()}
+    for inv in inventory:
+        inv['product_name'] = products.get(inv.get('product_id'), inv.get('product_id'))
+    for p in predictions:
+        p['product_name'] = products.get(p.get('product_id'), p.get('product_id'))
+    return jsonify({'inventory': inventory, 'predictions': predictions})

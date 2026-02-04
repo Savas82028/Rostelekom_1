@@ -11,11 +11,11 @@
     .logout-btn { padding: 8px 20px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; text-decoration: none; font-weight: 600; }
     .logout-btn:hover { background: rgba(255,255,255,0.35); color: white; }
     .content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-height: calc(100vh - 80px); }
-    .block { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .block { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; min-height: 520px; }
     .block h2 { color: #7700ff; margin-bottom: 16px; font-size: 1.2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .btn-prognoz { padding: 8px 16px; background: linear-gradient(135deg, #7700ff, #ff4f12); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
     .btn-prognoz:hover { opacity: 0.9; }
-    .table-wrap { flex: 1; overflow: auto; max-height: 350px; }
+    .table-wrap { flex: 1; overflow: auto; max-height: 620px; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
     .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
     .data-table th { color: #7700ff; font-weight: 600; position: sticky; top: 0; background: white; }
@@ -48,7 +48,7 @@
                 <thead>
                     <tr><th>Дата</th><th>Робот</th><th>Товар</th><th>Кол-во</th><th>Статус</th></tr>
                 </thead>
-                <tbody>
+                <tbody id="inventory-body">
                     {% for inv in inventory %}
                     <tr>
                         <td>{{ inv.scanned_at[:16].replace('T',' ') if inv.scanned_at else '—' }}</td>
@@ -86,7 +86,7 @@
                 <thead>
                     <tr><th>Товар</th><th>Дата</th><th>Дней до исчерпания</th><th>Рекоменд. заказ</th><th>Уверенность</th></tr>
                 </thead>
-                <tbody>
+                <tbody id="predictions-body">
                     {% for p in predictions %}
                     <tr>
                         <td>{{ p.product_name or p.product_id or '—' }}</td>
@@ -104,4 +104,54 @@
         </div>
     </div>
 </main>
+{% endblock %}
+{% block extra_js %}
+<script>
+    function renderInventory(items) {
+        const tbody = document.getElementById('inventory-body');
+        if (!tbody) return;
+        const rows = items.map(inv => {
+            const dt = inv.scanned_at ? inv.scanned_at.slice(0,16).replace('T',' ') : '—';
+            const product = inv.product_name ?? inv.product_id ?? '—';
+            return `<tr>
+                <td>${dt}</td>
+                <td>${inv.robot_id ?? '—'}</td>
+                <td>${product}</td>
+                <td>${inv.quantity ?? '—'}</td>
+                <td>${inv.status ?? '—'}</td>
+            </tr>`;
+        }).join('');
+        tbody.innerHTML = rows || `<tr><td colspan="5" class="empty-msg">Нет данных инвентаризации</td></tr>`;
+    }
+
+    function renderPredictions(items) {
+        const tbody = document.getElementById('predictions-body');
+        if (!tbody) return;
+        const rows = items.map(p => {
+            const product = p.product_name ?? p.product_id ?? '—';
+            return `<tr>
+                <td>${product}</td>
+                <td>${p.prediction_date ?? '—'}</td>
+                <td>${p.days_until_stockout ?? '—'}</td>
+                <td>${p.recommended_order ?? '—'}</td>
+                <td>${p.confidence_score ?? '—'}</td>
+            </tr>`;
+        }).join('');
+        tbody.innerHTML = rows || `<tr><td colspan="5" class="empty-msg">Прогнозы отсутствуют</td></tr>`;
+    }
+
+    async function refreshData() {
+        try {
+            const resp = await fetch('{{ url_for("dashboard.data_logist") }}', { headers: { 'Accept': 'application/json' } });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            renderInventory(data.inventory || []);
+            renderPredictions(data.predictions || []);
+        } catch (e) {
+            // silent
+        }
+    }
+    setInterval(refreshData, 5000);
+    document.addEventListener('DOMContentLoaded', refreshData);
+</script>
 {% endblock %}
