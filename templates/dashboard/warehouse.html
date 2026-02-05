@@ -24,10 +24,13 @@
     .status-critical { color: #c62828; }
     @media (max-width: 1200px) { .content { grid-template-columns: 1fr; } }
     .map-wrap { flex: 1; overflow: auto; background: #f5f5f5; border-radius: 12px; border: 1px solid #eee; }
-    #mapSvg { width: 100%; height: 100%; min-height: 520px; display: block; }
+    #mapSvg { width: 100%; height: 100%; min-height: 520px; display: block; transform-origin: 0 0; }
     .map-label { fill: #777; font-size: 12px; font-family: 'Segoe UI', Arial, sans-serif; }
     .robot-id-text { fill: #fff; font-weight: 700; font-size: 12px; text-anchor: middle; dominant-baseline: middle; }
     .robot-batt-text { fill: #333; font-size: 11px; text-anchor: middle; }
+    .map-controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .zoom-btn { padding: 8px 14px; background: linear-gradient(135deg, #7700ff, #ff4f12); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+    .zoom-btn:hover { opacity: 0.9; }
 </style>
 {% endblock %}
 {% block content %}
@@ -45,6 +48,11 @@
     {% if not view or view == 'robots' %}
     <div class="block" data-url="{{ url_for('dashboard.app_page', app_name='robots') }}">
         <h2>Карта склада с роботами</h2>
+        <div class="map-controls">
+            <button class="zoom-btn" id="zoomIn">Приблизить</button>
+            <button class="zoom-btn" id="zoomOut">Отдалить</button>
+            <button class="zoom-btn" id="zoomReset">Сброс</button>
+        </div>
         <div class="map-wrap">
             <svg id="mapSvg"></svg>
         </div>
@@ -222,6 +230,12 @@
         tbody.innerHTML = rows || `<tr><td colspan="6" class="empty-msg">Нет данных инвентаризации</td></tr>`;
     }
 
+    let mapScale = 0.2;
+    function applyMapScale() {
+        const svg = document.getElementById('mapSvg');
+        if (svg) svg.style.transform = 'scale(' + mapScale + ')';
+    }
+
     async function refreshData() {
         try {
             const resp = await fetch('{{ url_for("dashboard.data_warehouse") }}', { headers: { 'Accept': 'application/json' } });
@@ -236,6 +250,16 @@
     setInterval(refreshData, 5000);
     document.addEventListener('DOMContentLoaded', () => {
         refreshData();
+        applyMapScale();
+        document.getElementById('zoomIn')?.addEventListener('click', () => { mapScale = Math.min(5, mapScale * 1.2); applyMapScale(); });
+        document.getElementById('zoomOut')?.addEventListener('click', () => { mapScale = Math.max(0.1, mapScale * 0.8); applyMapScale(); });
+        document.getElementById('zoomReset')?.addEventListener('click', () => { mapScale = 0.2; applyMapScale(); });
+        document.querySelector('.map-wrap')?.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY > 0 ? 0.9 : 1.1;
+            mapScale = Math.max(0.1, Math.min(5, mapScale * factor));
+            applyMapScale();
+        }, { passive: false });
         document.querySelectorAll('.block[data-url]').forEach(el => {
             el.addEventListener('click', () => {
                 const u = el.dataset.url;

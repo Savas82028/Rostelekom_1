@@ -60,12 +60,12 @@
         color: white;
     }
     
-    .content { max-width: 960px; margin: 40px auto; padding: 0 24px; }
-    .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-    .app-card { display: block; text-decoration: none; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .content { max-width: 100%; padding: 16px; }
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; min-height: calc(100vh - 120px); align-items: stretch; }
+    .app-card { display: block; text-decoration: none; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); transition: transform 0.15s ease, box-shadow 0.15s ease; min-height: 220px; }
     .app-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.12); }
-    .app-title { color: #7700ff; font-weight: 700; margin-bottom: 8px; font-size: 1.1rem; }
-    .app-desc { color: #666; font-size: 0.95rem; }
+    .app-title { color: #000; font-weight: 800; margin-bottom: 10px; font-size: 1.2rem; }
+    .app-desc { color: #111; font-size: 1rem; }
     .apps-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .apps-sub { color: #7700ff; font-weight: 600; }
 </style>
@@ -83,7 +83,7 @@
 
 <main class="content">
     <div class="apps-header">
-        <div style="color:#333;font-weight:600;">Добро пожаловать, {{ current_user.login }}!</div>
+        <div style="color:#000;font-weight:700;">Добро пожаловать, {{ current_user.login }}!</div>
         <div class="apps-sub">{{ current_user.role }}</div>
     </div>
     {% set app_defs = {
