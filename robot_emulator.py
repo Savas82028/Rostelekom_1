@@ -117,4 +117,4 @@ if __name__ == "__main__":
 
     # Держим главный поток активным
     while True:
-        time.sleep(60)
+        time.sleep(400)
