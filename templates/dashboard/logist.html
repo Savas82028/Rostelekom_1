@@ -75,13 +75,15 @@
             {% if products_list %}
             <table class="data-table">
                 <thead>
-                    <tr><th>ID</th><th>Название</th></tr>
+                    <tr><th>ID</th><th>Название</th><th>Кол-во</th><th>Статус</th></tr>
                 </thead>
                 <tbody id="products-body">
                     {% for p in products_list %}
                     <tr>
                         <td>{{ p.id }}</td>
                         <td>{{ p.name or p.id }}</td>
+                        <td>{{ p.quantity or 0 }}</td>
+                        <td>{{ p.status or '—' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -162,9 +164,11 @@
             return `<tr>
                 <td>${p.id ?? '—'}</td>
                 <td>${name}</td>
+                <td>${p.quantity ?? 0}</td>
+                <td>${p.status ?? '—'}</td>
             </tr>`;
         }).join('');
-        tbody.innerHTML = rows || `<tr><td colspan="2" class="empty-msg">Нет данных о товарах</td></tr>`;
+        tbody.innerHTML = rows || `<tr><td colspan="4" class="empty-msg">Нет данных о товарах</td></tr>`;
     }
 
     function renderPredictions(items) {
