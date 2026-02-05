@@ -138,6 +138,47 @@ def get_products():
     r = supabase.table('products').select('*').execute()
     return r.data or []
 
+def recompute_products_quantities_and_status(ideal_quantity=8750):
+    """
+    Агрегирует суммы quantity из inventory_history по product_id
+    и обновляет таблицу products: quantity и status.
+    Пороговые значения статуса:
+      - quantity > ideal_quantity => "OK"
+      - 3900 < quantity <= ideal_quantity => "LOW_STOCK"
+      - quantity <= 3900 => "CRITICAL"
+    """
+    supabase = get_supabase()
+    r = supabase.table('inventory_history').select('product_id, quantity').execute()
+    rows = r.data or []
+    totals = {}
+    for row in rows:
+        pid = row.get('product_id')
+        q = row.get('quantity')
+        if not pid:
+            continue
+        try:
+            if isinstance(q, int):
+                qv = q
+            elif isinstance(q, float):
+                qv = int(q)
+            elif isinstance(q, str):
+                qv = int(float(q))
+            else:
+                qv = 0
+        except Exception:
+            qv = 0
+        totals[pid] = totals.get(pid, 0) + qv
+    for pid, total in totals.items():
+        status = 'OK' if total > ideal_quantity else ('LOW_STOCK' if total > 3900 else 'CRITICAL')
+        payload = {'quantity': int(total), 'status': status}
+        try:
+            supabase.table('products').update(payload).eq('id', pid).execute()
+        except Exception:
+            pass
+        try:
+            supabase.table('products').update(payload).eq('product_id', pid).execute()
+        except Exception:
+            pass
 
 # --- AI Predictions ---
 

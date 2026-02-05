@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from database.models import (
     User,
     get_robots, get_inventory_history, get_ai_predictions, get_products,
-    get_users_except_admin, create_user, user_exists,
+    get_users_except_admin, create_user, user_exists, recompute_products_quantities_and_status,
 )
 from services.ai_prognoz import generate_ai_prognoz
 
@@ -92,6 +92,10 @@ def create_account():
 @dashboard_bp.route('/data/warehouse')
 @login_required
 def data_warehouse():
+    try:
+        recompute_products_quantities_and_status()
+    except Exception:
+        pass
     robots = get_robots()
     inventory = get_inventory_history(50)
     products = {p['id']: p.get('name', p['id']) for p in get_products()}
@@ -103,6 +107,10 @@ def data_warehouse():
 @dashboard_bp.route('/data/logist')
 @login_required
 def data_logist():
+    try:
+        recompute_products_quantities_and_status()
+    except Exception:
+        pass
     inventory = get_inventory_history(50)
     predictions = get_ai_predictions(20)
     products_list = get_products()

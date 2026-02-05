@@ -8,7 +8,7 @@ import requests
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 
-from database.models import get_inventory_history, get_products, insert_ai_prediction
+from database.models import get_inventory_history, get_products, insert_ai_prediction, recompute_products_quantities_and_status
 
 load_dotenv()
 
@@ -23,28 +23,29 @@ def generate_ai_prognoz():
     Получает данные из inventory_history и products, отправляет в ИИ-API,
     сохраняет прогнозы в ai_predictions.
     """
-    inventory = get_inventory_history(50)
+    recompute_products_quantities_and_status()
     products = get_products()
 
-    if not inventory:
-        return None, "Нет данных инвентаризации для анализа"
+    if not products:
+        return None, "Нет данных о товарах для прогноза"
 
-    product_names = {p['id']: p.get('name', p['id']) for p in products}
     lines = []
-    for inv in inventory:
-        product_name = product_names.get(inv.get('product_id'), inv.get('product_id'))
-        scanned = inv.get('scanned_at', '')[:10] if inv.get('scanned_at') else '—'
-        lines.append(f"- {product_name}: {inv.get('quantity', 0)} шт. (дата: {scanned}, статус: {inv.get('status', '—')})")
+    for p in products:
+        pid = p.get('id') or p.get('product_id')
+        name = p.get('name') or pid
+        qty = p.get('quantity', 0)
+        status = p.get('status', 'UNKNOWN')
+        lines.append(f"- {pid} ({name}): {qty} шт., статус: {status}")
     data_text = "\n".join(lines)
 
     user_input = (
-        "Ты — аналитик логистики. На основе данных инвентаризации товаров на складе "
+        "Ты — аналитик логистики. На основе агрегированных остатков товаров на складе (таблица products) "
         "дай прогноз по каждому товару: сколько дней до исчерпания запаса, "
         "рекомендуемый объём заказа, уверенность прогноза (0.0–1.0). "
         "Отвечай ТОЛЬКО в формате JSON-массива, каждый элемент: "
         '{"product_id": "TEL-4567", "days_until_stockout": 14, "recommended_order": 50, "confidence": 0.85}. '
         "Если не можешь дать точные числа — используй оценки.\n\n"
-        f"Данные инвентаризации:\n\n{data_text}\n\n"
+        f"Данные по товарам:\n\n{data_text}\n\n"
         "Список product_id из данных выше. Верни JSON-массив прогнозов."
     )
 
@@ -61,8 +62,8 @@ def generate_ai_prognoz():
             deepseek_402 = True
 
     if prognoz_text is None:
-        # Демо: создаём прогнозы на основе данных
-        product_ids = list(set(inv.get('product_id') for inv in inventory if inv.get('product_id')))
+        # Демо: создаём прогнозы на основе products
+        product_ids = [p.get('id') or p.get('product_id') for p in products if (p.get('id') or p.get('product_id'))]
         pred_date = date.today()
         for pid in product_ids[:5]:
             insert_ai_prediction(
@@ -88,7 +89,7 @@ def generate_ai_prognoz():
             predictions = [predictions]
     except json.JSONDecodeError:
         # Fallback: один общий прогноз
-        product_ids = list(set(inv.get('product_id') for inv in inventory if inv.get('product_id')))
+        product_ids = [p.get('id') or p.get('product_id') for p in products if (p.get('id') or p.get('product_id'))]
         for pid in product_ids[:3]:
             insert_ai_prediction(pid, date.today(), 14, 50, 0.7)
         return True, None
